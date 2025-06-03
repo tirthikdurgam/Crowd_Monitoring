@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+env/
+venv/
+*.env
+
+# Flask uploads
+uploads/
+output/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+

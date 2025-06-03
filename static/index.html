@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script>
+        const allowedTypes = ['video/mp4'];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+document.addEventListener("DOMContentLoaded", () => {
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const resultDiv = document.getElementById('result');
+
+    uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async function () {
+        const file = this.files[0];
+
+        if (!file) {
+            resultDiv.innerHTML = `<div style="color: red; text-align: center;">Please select a file!</div>`;
+            return;
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+            resultDiv.innerHTML = `<div style="color: red; text-align: center;">Invalid file type! Please upload an MP4 video.</div>`;
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            resultDiv.innerHTML = `<div style="color: red; text-align: center;">File too large! Maximum size allowed is 50MB.</div>`;
+            return;
+        }
+
+        resultDiv.innerHTML = `<div style="text-align: center;">Uploading video...</div>`;
+
+        try {
+            // Step 1: Upload video
+            const formData = new FormData();
+            formData.append('video', file);
+
+            const uploadResponse = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                const errorText = await uploadResponse.text();
+                resultDiv.innerHTML = `<div style="color: red; text-align: center;">Upload failed: ${errorText}</div>`;
+                return;
+            }
+
+            const uploadData = await uploadResponse.json();
+
+            if (!uploadData.filename) {
+                resultDiv.innerHTML = `<div style="color: red; text-align: center;">Upload response missing filename.</div>`;
+                return;
+            }
+
+            resultDiv.innerHTML = `<div class="spinner"></div><div class="processing-message">Processing video, please wait...</div>`;
+
+
+            // Step 2: Process video
+            const processResponse = await fetch('/process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filename: uploadData.filename}),
+            });
+
+            if (!processResponse.ok) {
+                const errorText = await processResponse.text();
+                resultDiv.innerHTML = `<div style="color: red; text-align: center;">Processing failed: ${errorText}</div>`;
+                return;
+            }
+
+            const processData = await processResponse.json();
+
+            if (!processData.output_url) {
+                resultDiv.innerHTML = `<div style="color: red; text-align: center;">Processing response missing output URL.</div>`;
+                return;
+            }
+
+            resultDiv.innerHTML = `
+                <div style="text-align: center; color: white;">
+                    Processing complete! <br/>
+                    <a href="${processData.output_url}" download>Download Processed Video</a>
+                </div>
+            `;
+
+        } catch (error) {
+            resultDiv.innerHTML = `<div style="color: red; text-align: center;">Error: ${error.message}</div>`;
+        }
+    });
+});
+    </script>
+</head>
+<style>
+    body {
+        font-family: 'Manrope', sans-serif; /* Global font set to Manrope */
+    }
+
+    .deepfake-container {
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .main-wrapper {
+        background: #000;
+        display: flex;
+        min-height: 800px;
+        width: 100%;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .header-container {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .nav-wrapper {
+        border-bottom: 1px solid #e5e8eb;
+        display: flex;
+        width: 100%;
+        align-items: center;
+        font-family: 'Manrope', sans-serif;
+        color: #fff;
+        justify-content: space-between; /* Ensures space between logo and nav links */
+        flex-wrap: wrap;
+        padding: 12px 40px;
+    }
+
+    .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font: 700 18px/1 'Manrope', sans-serif;
+        white-space: nowrap;
+    }
+
+    .logo-icon {
+        min-height: 23px;
+        width: auto;
+    }
+
+    .brand-name {
+        min-height: 23px;
+        width: 174px;
+    }
+
+    .nav-menu {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        font: 500 14px 'Manrope', sans-serif;
+        margin-left: auto;
+    }
+
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+    }
+    .nav-links a {
+        color: #fff; /* Ensures the text color is white */
+        text-decoration: none; /* Removes the underline */
+    }
+
+    .nav-links a:hover {
+        text-decoration: underline; /* Optional: Add underline on hover */
+    }
+    .sign-in-btn {
+        border-radius: 20px;
+        background: #2194f2;
+        display: flex;
+        min-width: 84px;
+        min-height: 40px;
+        max-width: 480px;
+        align-items: center;
+        overflow: hidden;
+        font: 700 14px 'Manrope', sans-serif;
+        text-align: center;
+        justify-content: center;
+        padding: 0 16px;
+        margin-right: 75px;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .sign-in-btn:hover{
+        background: #000;
+        color: #fff;
+    }
+
+    .content-section {
+        display: flex;
+        width: 100%;
+        align-items: start;
+        justify-content: center;
+        flex: 1;
+        padding: 20px 0; /* Removed left and right padding */
+    }
+
+    .content-wrapper {
+        display: flex;
+        min-width: 240px;
+        min-height: 695px;
+        width: 100%;
+        max-width: 960px;
+        flex-direction: column;
+        overflow: hidden;
+        flex: 1;
+        margin: 0 auto; /* Added margin to center align */
+    }
+
+    .main-heading {
+        color: #fff;
+        text-align: center;
+        padding: 24px 16px 12px;
+        font: 700 32px/1 'Manrope', sans-serif; /* Updated font to Manrope */
+    }
+
+    .sub-heading {
+        color: #fff;
+        text-align: center;
+        padding: 4px 16px 12px;
+        font: 400 16px 'Manrope', sans-serif; /* Updated font to Manrope */
+    }
+
+    .image-grid {
+        display: flex;
+        min-height: 255px;
+        width: 100%;
+        flex-direction: column;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .image-wrapper {
+        display: flex;
+        width: 100%;
+        gap: 12px;
+        justify-content: start;
+        flex: 1;
+        flex-wrap: wrap;
+    }
+
+    .image-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: start;
+        flex-grow: 1;
+        width: 178px;
+    }
+
+    .upload-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 10vh;
+      color: #fff;
+      text-align: center;
+      font: 700 14px/21px 'Manrope', sans-serif;
+    }
+
+    .upload-btn {
+        border-radius: 20px;
+        background: #2194f2;
+        font: 700 14px 'Manrope', sans-serif;
+        display: flex;
+        min-width: 84px;
+        min-height: 40px;
+        width: 156px;
+        max-width: 480px;
+        align-items: center;
+        overflow: hidden;
+        justify-content: center;
+        padding: 0 16px;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .upload-btn:hover{
+        background: #000;
+        color: #fff;
+    }
+
+    .file-info {
+        color: #8fb0cc;
+        text-align: center;
+        padding: 4px 16px 12px;
+        font: 400 14px 'Manrope', sans-serif; /* Updated font to Manrope */
+    }
+
+    @media (max-width: 991px) {
+        .main-wrapper,
+        .header-container,
+        .nav-wrapper,
+        .nav-menu,
+        .content-section,
+        .content-wrapper,
+        .main-heading,
+        .sub-heading,
+        .image-grid,
+        .image-wrapper,
+        .upload-section,
+        .file-info {
+            max-width: 100%;
+        }
+
+        .nav-wrapper {
+            padding: 0 20px;
+        }
+
+        .content-section {
+            padding: 20px 0; /* Updated padding */
+        }
+
+        .content-wrapper {
+            margin: 0 auto; /* Added margin to center align */
+        }
+    }
+    .spinner {
+      margin: 20px auto;
+      border: 6px solid #f3f3f3; /* Light grey */
+      border-top: 6px solid #2194f2; /* Blue */
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Processing message style */
+    .processing-message {
+      color: #2194f2;
+      font-weight: 700;
+      font-size: 18px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+</style>
+
+<main class="deepfake-container">
+    <div class="main-wrapper">
+        <div class="header-container">
+            <nav class="nav-wrapper" role="navigation">
+                <div class="logo-section">
+                    <span class="logo-icon" aria-hidden="true"></span>
+                    <h1 class="brand-name">Crowd Monitoring</h1>
+                </div>
+            </nav>
+            <section class="content-section">
+                <div class="content-wrapper">
+                    <h2 class="main-heading">Monitor crowd density with one click</h2>
+                    <div class="image-grid">
+                        <div class="image-wrapper">
+                            <div class="image-container">
+                                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/e7dbb4604c5bd9f0c139e65e1e9179e365b1924ed1eb41c6f2053092bf0a0275?placeholderIfAbsent=true&apiKey=305d836b0b01490dbb2ec69e0ae58625" alt="Crowd monitoring sample 1" class="detection-image" loading="lazy" />
+                            </div>
+                            <div class="image-container">
+                                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/9967104a4fc52856f5716725f454cd530876fca9f76a8df5dd7cc20ba3b6f76b?placeholderIfAbsent=true&apiKey=305d836b0b01490dbb2ec69e0ae58625" alt="Crowd monitoring sample 2" class="detection-image" loading="lazy" />
+                            </div>
+                            <div class="image-container">
+                                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/6bfcbea6d65ae53fd516276de2dabcddf91dbfd29ae16a9695b364d29cc4caea?placeholderIfAbsent=true&apiKey=305d836b0b01490dbb2ec69e0ae58625" alt="Crowd monitoring sample 3" class="detection-image" loading="lazy" />
+                            </div>
+                            <div class="image-container">
+                                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/c26691de6b68496552b201838b596f47ce37506baacd7f09dbee51d5e2956099?placeholderIfAbsent=true&apiKey=305d836b0b01490dbb2ec69e0ae58625" alt="Crowd monitoring sample 4" class="detection-image" loading="lazy" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-section">
+                        <input type="file" id="fileInput" accept="image/jpeg, image/png, video/mp4" style="display: none;" />
+                        <button id="uploadBtn" class="upload-btn" aria-label="Upload files for crowd monitoring">
+                            Upload Files
+                        </button>
+                    </div>
+
+                    <div id="result"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</html>
